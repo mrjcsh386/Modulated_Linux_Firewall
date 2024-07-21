@@ -1,0 +1,80 @@
+#! /usr/sbin/nft -f
+
+
+# The variables found here will have to be reviewed and applied as per
+# wan_iface is intended to represent the internet/network facing iface.
+define wan_iface = ""  # Required.
+define wan_inet4 = ""
+define wan_inet6 = ""
+# lan_iface will be host to a broadcast domain where masquerading will
+# provided to.
+define lan_iface = ""  # Optional.
+define lan_inet4 = ""
+define lan_inet6 = ""
+# Administrative network interface (Can be unique, can be shared.).
+define man_iface = ""  # Conditional. (Should be required for remote managing).
+define man_inet4 = ""
+define man_inet6 = ""
+# DMZ network interface
+define dmz_iface = ""  # Optional.
+define dmz_inet4 = ""
+define dmz_inet6 = ""
+
+# Test for a series of variables for the presence of occupants. If found,
+# act upon certain criteria required by the spirit of the technology.
+if wan_iface != "" {
+  table netdev filter {
+    chain ingress {
+      type filter hook ingress device $wan_iface priority -200 ;
+      jump ingress_filter
+    }
+  }
+}
+
+if lan_iface != "" {
+
+}
+
+if man_iface != "" {
+  table inet filter {
+    set trusted_nets {
+      type inet_addr
+      flags interval
+      elements = { $man_inet4, $man_inet6 }
+    }
+
+}
+
+if dmz_iface != "" {
+  define dmz_spam_udp = { 1234 }
+  define dmz_spam_tcp = { 2350 }
+
+  table inet filter {
+    set spam_udp {
+      type inet_service
+      elements = { $dmz_spam_udp }
+    }
+
+    set spam_tcp {
+      type inet_service
+      elements = { $dmz_spam_tcp }
+    }
+
+    set dmz_nets {
+      type inet_addr
+      flags invertval
+      elements = { $dmz_inet4, $dmz_inet6 }
+    }
+
+    set untrusted nets {
+      type inet_addr
+      flags interval
+      elements = { $dmz_inet4, $dmz_inet6 }
+    }
+  }
+
+  chain drop_filter {
+    tcp dport @spam_tcp iif $dmz_iface counter drop
+    udp dport @spam_udp iif $dmz_iface counter drop
+  }
+}
