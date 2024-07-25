@@ -45,22 +45,22 @@ function core_rules4() {
 
   # User-defined chains
   # mangle Log And Drop
-  ${man4} -N mangle-LARet4
-  ${man4} -A mangle-LARet4 -m limit 10/min \
+  ${man4} -N mangle-LAD6
+  ${man4} -A mangle-LAD6 -m limit 10/min \
    -j LOG --log-prefix 'ipt: mangle DROP: ' --log-level 7
-  ${man4} -A mangle-LAD4 -j RETURN
+  ${man4} -A mangle-LAD6 -j RETURN
 
   # Mangle is the earliest hook for stateful inspections. TCP is up first for
   # definitions of filters.
   # mangle TCP filter
   ${man4} -N mangle-TCP4
   # These are totally invalids! Awareness, maybe?
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags FIN,SYN FIN,SYN -j mangle-LARet4
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags SYN,RST SYN,RST -j mangle-LAD4
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags FIN,RST FIN,RST -j mangle-LAD4
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags FIN,ACK FIN -j mangle-LAD4
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags ACK,PSH PSH -j mangle-LAD4
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags ACK,URG URG -j mangle-LAD4
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags FIN,SYN FIN,SYN -j mangle-LAD6
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags SYN,RST SYN,RST -j mangle-LAD6
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags FIN,RST FIN,RST -j mangle-LAD6
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags FIN,ACK FIN -j mangle-LAD6
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags ACK,PSH PSH -j mangle-LAD6
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags ACK,URG URG -j mangle-LAD6
   ${man4} -A mangle-TCP4 -p tcp --tcp-flags ALL NONE -j mangle-LAD4
   ${man4} -A mangle-TCP4 -p tcp --tcp-flags ALL ALL -j mangle-LAD4
   ${man4} -A mangle-TCP4 -p tcp --tcp-flags ALL URG -j mangle-LAD4
