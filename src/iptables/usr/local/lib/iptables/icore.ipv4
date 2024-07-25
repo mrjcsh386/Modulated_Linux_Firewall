@@ -1,0 +1,137 @@
+#! /bin/bash
+
+
+function flush_rules4() {
+
+  # Flush all rules to present a clean slate for consistent values.
+  ${raw4} -F; ${raw4} -X
+  ${raw4} -P PREROUTING ACCEPT
+  ${raw4} -P OUTPUT ACCEPT
+
+  ${man4} -F; ${man4} -X
+  ${man4} -P PREROUTING ACCEPT
+  ${man4} -P INPUT ACCEPT
+  ${man4} -P FORWARD ACCEPT
+  ${man4} -P OUTPUT ACCEPT
+  ${man4} -P POSTROUTING ACCEPT
+
+  ${nat4} -F; ${nat4} -X
+  ${nat4} -P PREROUTING ACCEPT
+  ${nat4} -P INPUT ACCEPT
+  ${nat4} -P OUTPUT ACCEPT
+  ${nat4} -P POSTROUTING ACCEPT
+
+  ${ipv4} -F; ${ipv4} -X
+  ${ipv4} -P INPUT ACCEPT
+  ${ipv4} -P FORWARD ACCEPT
+  ${ipv4} -P OUTPUT ACCEPT
+
+  ${sec4} -F; ${sec4} -X
+  ${sec4} -P INPUT ACCEPT
+  ${sec4} -P FORWARD ACCEPT
+  ${sec4} -P OUTPUT ACCEPT
+
+}
+
+function core_rules4() {
+
+  # This version of the iptables suite will filter ingress traffic only.
+  ${ipv4} -P INPUT DROP
+  ${ipv4} -P FORWARD DROP
+
+  ${ipv4} -A INPUT -i lo -j ACCEPT
+  # Will be relying on sysctl configuration for icmp behaviour.
+  ${ipv4} -A INPUT -p icmp -j ACCEPT
+
+  # User-defined chains
+  # mangle Log And Drop
+  ${man4} -N mangle-LARet4
+  ${man4} -A mangle-LARet4 -m limit 10/min \
+   -j LOG --log-prefix 'ipt: mangle DROP: ' --log-level 7
+  ${man4} -A mangle-LAD4 -j RETURN
+
+  # Mangle is the earliest hook for stateful inspections. TCP is up first for
+  # definitions of filters.
+  # mangle TCP filter
+  ${man4} -N mangle-TCP4
+  # These are totally invalids! Awareness, maybe?
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags FIN,SYN FIN,SYN -j mangle-LARet4
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags SYN,RST SYN,RST -j mangle-LAD4
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags FIN,RST FIN,RST -j mangle-LAD4
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags FIN,ACK FIN -j mangle-LAD4
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags ACK,PSH PSH -j mangle-LAD4
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags ACK,URG URG -j mangle-LAD4
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags ALL NONE -j mangle-LAD4
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags ALL ALL -j mangle-LAD4
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags ALL URG -j mangle-LAD4
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags ALL PSH -j mangle-LAD4
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags RST RST \
+   -m limit --limit 2/s --limit-burst 2 -j RETURN
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags RST RST -j mangle-LAD4
+  # mangle UDP filter
+  ${man4} -N mangle-UDP4
+  ${man4} -A mangle-UDP4 -p udp -m hashlimit --hashlimit-above 300/second \
+   --hashlimit-mode srcip --hashlimit-name udp_limit -j mangle-LAD4
+  ${man4} -A mangle-UDP4 -p udp -m length --length 1221:65535 -j mangle-LAD4
+
+  # filter Log And Drop
+  ${ipv4} -N filter-LAD4
+  ${ipv4} -A filter-LAD4 -m limit 10/min \
+   -j LOG --log-prefix 'ipt: filter DROP: ' --log-level 7
+  ${ipv4} -A filter-LAD4 -j DROP
+  # filter Log And Reject
+  ${ipv4} -N filter-LAR4
+  # Micro test somehow this mechanism
+  ${ipv4} -A filter-LAR4 -m recent --name log_shield --rttl --rcheck \
+   --hitcount 10 --seconds 60 -j filter-LAD4
+  ${ipv4} -A filter-LAR4 -m recent --name log_shield --rttl --rcheck \
+   --hitcount 21 --seconds 120 -j filter-LAD4
+  ${ipv4} -A filter-LAR4 -m recent --name log_shield \
+   --set -j LOG --log-prefix 'ipt: filter REJECT: ' --log-level 4
+  # And Reject!
+  ${ipv4} -A filter-LAR4 -p tcp -j REJECT --reject-with tcp-reset
+  ${ipv4} -A filter-LAR4 -p udp -j REJECT --reject-with icmp-port-unreachable
+  ${ipv4} -A filter-LAR4 -j REJECT --reject-with icmp-proto-unreachable
+  # filter TCP
+  ${ipv4} -N filter-TCP4
+  ${ipv4} -A filter-TCP4 -p tcp -m connlimit --connlimit-above 80 \
+   -j filter-LAR4
+  ${ipv4} -A filter-TCP4 -p tcp -m recent --name TCP4-PSCAN --rsource --update \
+   --seconds 80 -j filter-LAR4
+  # filter UDP
+  ${ipv4} -N filter-UDP4
+  ${ipv4} -A filter-UDP4 -p udp -m recent --name UDP4-PSCAN --rsource --update \
+   --seconds 80 -j filter-LAR4
+
+  # Built-in chains and tables
+  # 'PREROUTING'
+  # 'raw'
+  # 'mangle'
+  # Mutated packets to be logged and dropped. I'm more than certain this covers
+  # what I will be filtering in mangle-TCP4. Drop it?
+  ${man4} -A PREROUTING -m conntrack --ctstate INVALID -j mangle-LAD4
+  # 'nat'
+
+  # 'INPUT'
+  # 'mangle'
+  # 'nat'
+  # 'filter'
+  # 'security'
+
+  # 'FORWARD'
+  # 'mangle'
+  # 'input'
+  # 'security'
+
+  # 'OUTPUT'
+  # 'raw'
+  # 'mangle'
+  # 'nat'
+  # 'filter'
+  # 'security'
+
+  # 'POSTROUTING'
+  # 'mangle'
+  # 'nat'
+
+}

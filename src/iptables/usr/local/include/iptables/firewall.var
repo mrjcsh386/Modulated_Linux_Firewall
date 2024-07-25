@@ -1,0 +1,20 @@
+# Seating short hand variables
+ipv4="$( command -v iptables )"
+raw4="$ipv4 -t raw"
+man4="$ipv4 -t mangle"
+nat4="$ipv4 -t nat"
+sec4="$ipv4 -t security"
+
+ipv6="$( command -v ip6tables )"
+raw6="$ipv6 -t raw"
+man6="$ipv6 -t mangle"
+nat6="$ipv6 -t nat"
+sec6="$ipv6 -t security"
+
+# Some directories I consider to be key to this project specifically.
+etc_dir="$script_root/etc/iptables"
+etc_file="$etc_dir/firewall.cfg"
+lib_dir="$script_root/lib/iptables"
+core4_ff="$lib_dir/icore.ipv4"
+core6_ff="$lib_dir/icore.ipv6"
+roles_dir="$lib_dir/roles.d"

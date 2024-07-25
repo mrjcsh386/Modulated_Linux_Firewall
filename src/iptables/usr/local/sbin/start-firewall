@@ -1,0 +1,38 @@
+#! /bin/bash
+# /usr/local/sbin/start-firewall
+# mrjcsh386
+# July 24, 2024
+
+# Purpose: To be called by a systemd service unit tailored for executing this
+# script on start-up to lay the foundations of a modular firewall.
+
+# Notes: Most of the components in this script can be called by hand.
+# Some of the components for functionality have been segmented into function
+# files that you can simply drop into the a directory where the main part will
+# source any of the files found within. '/usr/local/lib/roles.d' will warehouse
+# the selected modules, and '/usr/local/share/iptables/roles.d' will present
+# the catalogue of modules I have written.
+
+# Configuring key variables that will populate throughout the script for
+# consistent results.
+script_root='/usr/local'
+inc_dir="$script_root/include/iptables"
+inc_file="$inc_dir/firewall.var"
+source "$inc_dir"
+
+# Pulling variables and other values from key files to provide functionality.
+source "$etc_file"
+source "$core4_ff"
+source "$core6_ff"
+
+# Add prestage scripts for such things as ipset assembly, or prehooks here.
+
+# Start assembling the firewall
+flush_rules4; flush_rules6
+core_rules4; core_rules6
+
+# Sourcing scripts that have been selected for deployment to secure services.
+# IPv4
+source "$roles_dir/*.ipv4"
+# IPv6
+source "$roles_dir/*.ipv6"
