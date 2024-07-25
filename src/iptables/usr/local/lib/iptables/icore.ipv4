@@ -45,8 +45,8 @@ function core_rules4() {
 
   # User-defined chains
   # mangle Log And Drop
-  ${man4} -N mangle-LARet4
-  ${man4} -A mangle-LARet4 -m limit 10/min \
+  ${man4} -N mangle-LAD4
+  ${man4} -A mangle-LAD4 -m limit --limit 10/min \
    -j LOG --log-prefix 'ipt: mangle DROP: ' --log-level 7
   ${man4} -A mangle-LAD4 -j RETURN
 
@@ -55,7 +55,7 @@ function core_rules4() {
   # mangle TCP filter
   ${man4} -N mangle-TCP4
   # These are totally invalids! Awareness, maybe?
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags FIN,SYN FIN,SYN -j mangle-LARet4
+  ${man4} -A mangle-TCP4 -p tcp --tcp-flags FIN,SYN FIN,SYN -j mangle-LAD4
   ${man4} -A mangle-TCP4 -p tcp --tcp-flags SYN,RST SYN,RST -j mangle-LAD4
   ${man4} -A mangle-TCP4 -p tcp --tcp-flags FIN,RST FIN,RST -j mangle-LAD4
   ${man4} -A mangle-TCP4 -p tcp --tcp-flags FIN,ACK FIN -j mangle-LAD4
@@ -76,7 +76,7 @@ function core_rules4() {
 
   # filter Log And Drop
   ${ipv4} -N filter-LAD4
-  ${ipv4} -A filter-LAD4 -m limit 10/min \
+  ${ipv4} -A filter-LAD4 -m limit --limit 10/min \
    -j LOG --log-prefix 'ipt: filter DROP: ' --log-level 7
   ${ipv4} -A filter-LAD4 -j DROP
   # filter Log And Reject
@@ -111,7 +111,7 @@ function core_rules4() {
   # what I will be filtering in mangle-TCP4. Drop it?
   ${man4} -A PREROUTING -m conntrack --ctstate INVALID -j mangle-LAD4
   # Drop packets for correct IP, but wrong interface.
-  ${man4} -A PREROUTING -m rpfilter --invert -j manlge-LAD4
+  ${man4} -A PREROUTING -m rpfilter --invert -j mangle-LAD4
   # Filters for UDP signatures
   ${man4} -A PREROUTING -p udp -j mangle-UDP4
   # Filters for TCP signatures
@@ -130,9 +130,9 @@ function core_rules4() {
   ${ipv4} -A INPUT -p udp -m conntrack --ctstate NEW \
    -m limit --limit 100/s --limit-burst 100 -j filter-UDP4
   # Traffic shapping of potential scans.
-  ${ipv4} -A INPUT -p tcp -m recent --name TCP4-PSCAN --resource \
+  ${ipv4} -A INPUT -p tcp -m recent --name TCP4-PSCAN --rsource \
    --set -j filter-LAR4
-  ${ipv4} -A INPUT -p udp -m recent --name UDP4-PSCAN --resource \
+  ${ipv4} -A INPUT -p udp -m recent --name UDP4-PSCAN --rsource \
    --set -j filter-LAR4
   ${ipv4} -A INPUT -j filter-LAR4
   # 'security'

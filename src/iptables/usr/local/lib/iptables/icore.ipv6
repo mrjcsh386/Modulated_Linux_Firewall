@@ -1,140 +1,140 @@
 #! /bin/bash
 
 
-function flush_rules4() {
+function flush_rules6() {
 
   # Flush all rules to present a clean slate for consistent values.
-  ${raw4} -F; ${raw4} -X
-  ${raw4} -P PREROUTING ACCEPT
-  ${raw4} -P OUTPUT ACCEPT
+  ${raw6} -F; ${raw6} -X
+  ${raw6} -P PREROUTING ACCEPT
+  ${raw6} -P OUTPUT ACCEPT
 
-  ${man4} -F; ${man4} -X
-  ${man4} -P PREROUTING ACCEPT
-  ${man4} -P INPUT ACCEPT
-  ${man4} -P FORWARD ACCEPT
-  ${man4} -P OUTPUT ACCEPT
-  ${man4} -P POSTROUTING ACCEPT
+  ${man6} -F; ${man6} -X
+  ${man6} -P PREROUTING ACCEPT
+  ${man6} -P INPUT ACCEPT
+  ${man6} -P FORWARD ACCEPT
+  ${man6} -P OUTPUT ACCEPT
+  ${man6} -P POSTROUTING ACCEPT
 
-  ${nat4} -F; ${nat4} -X
-  ${nat4} -P PREROUTING ACCEPT
-  ${nat4} -P INPUT ACCEPT
-  ${nat4} -P OUTPUT ACCEPT
-  ${nat4} -P POSTROUTING ACCEPT
+  ${nat6} -F; ${nat6} -X
+  ${nat6} -P PREROUTING ACCEPT
+  ${nat6} -P INPUT ACCEPT
+  ${nat6} -P OUTPUT ACCEPT
+  ${nat6} -P POSTROUTING ACCEPT
 
-  ${ipv4} -F; ${ipv4} -X
-  ${ipv4} -P INPUT ACCEPT
-  ${ipv4} -P FORWARD ACCEPT
-  ${ipv4} -P OUTPUT ACCEPT
+  ${ipv6} -F; ${ipv6} -X
+  ${ipv6} -P INPUT ACCEPT
+  ${ipv6} -P FORWARD ACCEPT
+  ${ipv6} -P OUTPUT ACCEPT
 
-  ${sec4} -F; ${sec4} -X
-  ${sec4} -P INPUT ACCEPT
-  ${sec4} -P FORWARD ACCEPT
-  ${sec4} -P OUTPUT ACCEPT
+  ${sec6} -F; ${sec6} -X
+  ${sec6} -P INPUT ACCEPT
+  ${sec6} -P FORWARD ACCEPT
+  ${sec6} -P OUTPUT ACCEPT
 
 }
 
-function core_rules4() {
+function core_rules6() {
 
   # This version of the iptables suite will filter ingress traffic only.
-  ${ipv4} -P INPUT DROP
-  ${ipv4} -P FORWARD DROP
+  ${ipv6} -P INPUT DROP
+  ${ipv6} -P FORWARD DROP
 
-  ${ipv4} -A INPUT -i lo -j ACCEPT
-  # Will be relying on sysctl configuration for icmp behaviour.
-  ${ipv4} -A INPUT -p icmp -j ACCEPT
+  ${ipv6} -A INPUT -i lo -j ACCEPT
+  # Will be relying on sysctl configuration for ipv6-icmp behaviour.
+  ${ipv6} -A INPUT -p ipv6-icmp -j ACCEPT
 
   # User-defined chains
   # mangle Log And Drop
-  ${man4} -N mangle-LAD6
-  ${man4} -A mangle-LAD6 -m limit 10/min \
+  ${man6} -N mangle-LAD6
+  ${man6} -A mangle-LAD6 -m limit --limit 10/min \
    -j LOG --log-prefix 'ipt: mangle DROP: ' --log-level 7
-  ${man4} -A mangle-LAD6 -j RETURN
+  ${man6} -A mangle-LAD6 -j RETURN
 
   # Mangle is the earliest hook for stateful inspections. TCP is up first for
   # definitions of filters.
   # mangle TCP filter
-  ${man4} -N mangle-TCP4
+  ${man6} -N mangle-TCP6
   # These are totally invalids! Awareness, maybe?
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags FIN,SYN FIN,SYN -j mangle-LAD6
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags SYN,RST SYN,RST -j mangle-LAD6
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags FIN,RST FIN,RST -j mangle-LAD6
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags FIN,ACK FIN -j mangle-LAD6
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags ACK,PSH PSH -j mangle-LAD6
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags ACK,URG URG -j mangle-LAD6
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags ALL NONE -j mangle-LAD4
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags ALL ALL -j mangle-LAD4
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags ALL URG -j mangle-LAD4
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags ALL PSH -j mangle-LAD4
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags RST RST \
+  ${man6} -A mangle-TCP6 -p tcp --tcp-flags FIN,SYN FIN,SYN -j mangle-LAD6
+  ${man6} -A mangle-TCP6 -p tcp --tcp-flags SYN,RST SYN,RST -j mangle-LAD6
+  ${man6} -A mangle-TCP6 -p tcp --tcp-flags FIN,RST FIN,RST -j mangle-LAD6
+  ${man6} -A mangle-TCP6 -p tcp --tcp-flags FIN,ACK FIN -j mangle-LAD6
+  ${man6} -A mangle-TCP6 -p tcp --tcp-flags ACK,PSH PSH -j mangle-LAD6
+  ${man6} -A mangle-TCP6 -p tcp --tcp-flags ACK,URG URG -j mangle-LAD6
+  ${man6} -A mangle-TCP6 -p tcp --tcp-flags ALL NONE -j mangle-LAD6
+  ${man6} -A mangle-TCP6 -p tcp --tcp-flags ALL ALL -j mangle-LAD6
+  ${man6} -A mangle-TCP6 -p tcp --tcp-flags ALL URG -j mangle-LAD6
+  ${man6} -A mangle-TCP6 -p tcp --tcp-flags ALL PSH -j mangle-LAD6
+  ${man6} -A mangle-TCP6 -p tcp --tcp-flags RST RST \
    -m limit --limit 2/s --limit-burst 2 -j RETURN
-  ${man4} -A mangle-TCP4 -p tcp --tcp-flags RST RST -j mangle-LAD4
+  ${man6} -A mangle-TCP6 -p tcp --tcp-flags RST RST -j mangle-LAD6
   # mangle UDP filter
-  ${man4} -N mangle-UDP4
-  ${man4} -A mangle-UDP4 -p udp -m hashlimit --hashlimit-above 300/second \
-   --hashlimit-mode srcip --hashlimit-name udp_limit -j mangle-LAD4
-  ${man4} -A mangle-UDP4 -p udp -m length --length 1221:65535 -j mangle-LAD4
+  ${man6} -N mangle-UDP6
+  ${man6} -A mangle-UDP6 -p udp -m hashlimit --hashlimit-above 300/second \
+   --hashlimit-mode srcip --hashlimit-name udp_limit -j mangle-LAD6
+  ${man6} -A mangle-UDP6 -p udp -m length --length 1221:65535 -j mangle-LAD6
 
   # filter Log And Drop
-  ${ipv4} -N filter-LAD4
-  ${ipv4} -A filter-LAD4 -m limit 10/min \
+  ${ipv6} -N filter-LAD6
+  ${ipv6} -A filter-LAD6 -m limit --limit 10/min \
    -j LOG --log-prefix 'ipt: filter DROP: ' --log-level 7
-  ${ipv4} -A filter-LAD4 -j DROP
+  ${ipv6} -A filter-LAD6 -j DROP
   # filter Log And Reject
-  ${ipv4} -N filter-LAR4
+  ${ipv6} -N filter-LAR6
   # Micro test somehow this mechanism
-  ${ipv4} -A filter-LAR4 -m recent --name log_shield --rttl --rcheck \
-   --hitcount 10 --seconds 60 -j filter-LAD4
-  ${ipv4} -A filter-LAR4 -m recent --name log_shield --rttl --rcheck \
-   --hitcount 21 --seconds 120 -j filter-LAD4
-  ${ipv4} -A filter-LAR4 -m recent --name log_shield \
+  ${ipv6} -A filter-LAR6 -m recent --name log_shield --rttl --rcheck \
+   --hitcount 10 --seconds 60 -j filter-LAD6
+  ${ipv6} -A filter-LAR6 -m recent --name log_shield --rttl --rcheck \
+   --hitcount 21 --seconds 120 -j filter-LAD6
+  ${ipv6} -A filter-LAR6 -m recent --name log_shield \
    --set -j LOG --log-prefix 'ipt: filter REJECT: ' --log-level 4
   # And Reject!
-  ${ipv4} -A filter-LAR4 -p tcp -j REJECT --reject-with tcp-reset
-  ${ipv4} -A filter-LAR4 -p udp -j REJECT --reject-with icmp-port-unreachable
-  ${ipv4} -A filter-LAR4 -j REJECT --reject-with icmp-proto-unreachable
+  ${ipv6} -A filter-LAR6 -p tcp -j REJECT --reject-with tcp-reset
+  ${ipv6} -A filter-LAR6 -p udp -j REJECT --reject-with icmp6-port-unreachable
+  ${ipv6} -A filter-LAR6 -j REJECT
   # filter TCP
-  ${ipv4} -N filter-TCP4
-  ${ipv4} -A filter-TCP4 -p tcp -m connlimit --connlimit-above 80 \
-   -j filter-LAR4
-  ${ipv4} -A filter-TCP4 -p tcp -m recent --name TCP4-PSCAN --rsource --update \
-   --seconds 80 -j filter-LAR4
+  ${ipv6} -N filter-TCP6
+  ${ipv6} -A filter-TCP6 -p tcp -m connlimit --connlimit-above 80 \
+   -j filter-LAR6
+  ${ipv6} -A filter-TCP6 -p tcp -m recent --name TCP6-PSCAN --rsource --update \
+   --seconds 80 -j filter-LAR6
   # filter UDP
-  ${ipv4} -N filter-UDP4
-  ${ipv4} -A filter-UDP4 -p udp -m recent --name UDP4-PSCAN --rsource --update \
-   --seconds 80 -j filter-LAR4
+  ${ipv6} -N filter-UDP6
+  ${ipv6} -A filter-UDP6 -p udp -m recent --name UDP6-PSCAN --rsource --update \
+   --seconds 80 -j filter-LAR6
 
   # Built-in chains and tables
   # 'PREROUTING'
   # 'raw'
   # 'mangle'
   # Mutated packets to be logged and dropped. I'm more than certain this covers
-  # what I will be filtering in mangle-TCP4. Drop it?
-  ${man4} -A PREROUTING -m conntrack --ctstate INVALID -j mangle-LAD4
+  # what I will be filtering in mangle-TCP6. Drop it?
+  ${man6} -A PREROUTING -m conntrack --ctstate INVALID -j mangle-LAD6
   # Drop packets for correct IP, but wrong interface.
-  ${man4} -A PREROUTING -m rpfilter --invert -j manlge-LAD4
+  ${man6} -A PREROUTING -m rpfilter --invert -j mangle-LAD6
   # Filters for UDP signatures
-  ${man4} -A PREROUTING -p udp -j mangle-UDP4
+  ${man6} -A PREROUTING -p udp -j mangle-UDP6
   # Filters for TCP signatures
-  ${man4} -A PREROUTING -p tcp -j mangle-TCP4
+  ${man6} -A PREROUTING -p tcp -j mangle-TCP6
   # 'nat'
 
   # 'INPUT'
   # 'mangle'
   # 'nat'
   # 'filter'
-  ${ipv4} -A INPUT -m conntrack --ctstate ESTABLISHED -j ACCEPT
+  ${ipv6} -A INPUT -m conntrack --ctstate ESTABLISHED -j ACCEPT
   # Permitting limited connections to tcp ports.
-  ${ipv4} -A INPUT -p tcp --syn -m conntrack --ctstate NEW \
-   -m limit --limit 60/s --limit-burst 20 -j filter-TCP4
+  ${ipv6} -A INPUT -p tcp --syn -m conntrack --ctstate NEW \
+   -m limit --limit 60/s --limit-burst 20 -j filter-TCP6
   # Permitting limited connections to udp ports.
-  ${ipv4} -A INPUT -p udp -m conntrack --ctstate NEW \
-   -m limit --limit 100/s --limit-burst 100 -j filter-UDP4
+  ${ipv6} -A INPUT -p udp -m conntrack --ctstate NEW \
+   -m limit --limit 100/s --limit-burst 100 -j filter-UDP6
   # Traffic shapping of potential scans.
-  ${ipv4} -A INPUT -p tcp -m recent --name TCP4-PSCAN --resource \
-   --set -j filter-LAR4
-  ${ipv4} -A INPUT -p udp -m recent --name UDP4-PSCAN --resource \
-   --set -j filter-LAR4
-  ${ipv4} -A INPUT -j filter-LAR4
+  ${ipv6} -A INPUT -p tcp -m recent --name TCP6-PSCAN --rsource \
+   --set -j filter-LAR6
+  ${ipv6} -A INPUT -p udp -m recent --name UDP6-PSCAN --rsource \
+   --set -j filter-LAR6
+  ${ipv6} -A INPUT -j filter-LAR6
   # 'security'
 
   # 'FORWARD'
