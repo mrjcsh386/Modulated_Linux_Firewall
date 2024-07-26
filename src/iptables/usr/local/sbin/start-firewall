@@ -21,7 +21,7 @@ inc_file="$inc_dir/firewall.var"
 source "$inc_file"
 
 # Pulling variables and other values from key files to provide functionality.
-source "$etc_file"
+#source "$etc_file"  # Todo: Engineer posture and paranoiha levels
 source "$core4_ff"
 source "$core6_ff"
 
@@ -33,6 +33,6 @@ core_rules4; core_rules6
 
 # Sourcing scripts that have been selected for deployment to secure services.
 # IPv4
-source "$roles_dir/*.ipv4"
+source "$roles_dir"/*.ipv4
 # IPv6
-source "$roles_dir/*.ipv6"
+source "$roles_dir"/*.ipv6
