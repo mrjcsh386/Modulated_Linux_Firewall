@@ -1,0 +1,20 @@
+#! /bin/bash
+
+
+# Check to see if ssh is enabled, if so we will deploy rules to support it.
+if systemctl status ssh --no-pager; then
+
+  sshd_conf='/etc/ssh/sshd_config'
+  sshd_port="$( grep ^Port $sshd_conf | awk '{print $2}' )"
+  sshd_port="${sshd_port:-22}"
+
+  ${ipv6} -N filter-SSH6
+  ${ipv6} -A filter-SSH6 -m recent --name sshbf4 --rttl --rcheck --hitcount 3 \
+   --seconds 10 -j filter-LAD6
+  ${ipv6} -A filter-SSH6 -m recent --name sshbf4 --rttl --rcheck --hitcount 4 \
+   --seconds 1800 -j filter-LAD6
+  ${ipv6} -A filter-SSH6 -m recent --name sshbf4 --set -j ACCEPT
+
+  ${ipv6} -A filter-TCP6 -p tcp --dport "$sshd_port" -j filter-SSH6
+
+fi
