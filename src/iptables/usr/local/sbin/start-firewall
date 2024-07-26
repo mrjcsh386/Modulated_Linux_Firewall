@@ -18,7 +18,7 @@
 script_root='/usr/local'
 inc_dir="$script_root/include/iptables"
 inc_file="$inc_dir/firewall.var"
-source "$inc_dir"
+source "$inc_file"
 
 # Pulling variables and other values from key files to provide functionality.
 source "$etc_file"
