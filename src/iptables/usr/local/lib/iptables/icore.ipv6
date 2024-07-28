@@ -33,7 +33,7 @@ function flush_rules6() {
 
 }
 
-function core_rules6() {
+function icore_rules6() {
 
   # This version of the iptables suite will filter ingress traffic only.
   ${ipv6} -P INPUT DROP

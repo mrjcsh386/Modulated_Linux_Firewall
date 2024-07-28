@@ -33,7 +33,7 @@ function flush_rules4() {
 
 }
 
-function core_rules4() {
+function icore_rules4() {
 
   # This version of the iptables suite will filter ingress traffic only.
   ${ipv4} -P INPUT DROP

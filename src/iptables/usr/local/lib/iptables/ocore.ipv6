@@ -1,0 +1,37 @@
+#! /bin/bash
+
+
+function ocore_rules6() {
+
+  ${ipv6} -P OUTPUT DROP
+
+  ${ipv6} -A OUTPUT -o lo -j ACCEPT
+  ${ipv6} -A OUTPUT -p ipv6-icmp -j ACCEPT
+
+  # User-defined chains
+  ${ipv6} -N outbound-LAR6
+  ${ipv6} -A outbound-LAR6 -j LOG --log-prefix 'ip6t: outbound REJECT: ' --log-level 4
+  ${ipv6} -A outbound-LAR6 -j REJECT
+
+  # filter-oTCP6
+  ${ipv6} -N filter-oTCP6
+  ${ipv6} -A filter-oTCP6 -p tcp -m multiport --dports "$www_server_ports" \
+   -m owner --gid-owner "$www_client_gid" --suppl-groups -j ACCEPT
+  ${ipv6} -A filter-oTCP6 -p tcp -m multiport --dports "$ssh_server_ports" \
+   -m owner --gid-owner "$ssh_client_gid" --suppl-groups -j ACCEPT
+  ${ipv6} -A filter-oTCP6 -p tcp -m multiport --dports "$ftp_server_ports" \
+   -m owner --gid-owner "$ftp_client_gid" --suppl-groups -j ACCEPT
+  ${ipv6} -A filter-oTCP6 -p tcp --dport 53 \
+   -m owner --gid-owner "staff" --suppl-groups -j ACCEPT
+  # filter-oUDP6
+  ${ipv6} -N filter-oUDP6
+  ${ipv6} -A filter-oUDP6 -p udp --dport 53 \
+   -m owner --gid-owner "dialout" --suppl-groups -j ACCEPT
+
+  ${ipv6} -A OUTPUT -m conntrack --ctstate ESTABLISHED -j ACCEPT
+  ${ipv6} -A OUTPUT -p tcp --syn -m conntrack --ctstate NEW -j filter-oTCP6
+  ${ipv6} -A OUTPUT -p udp -m conntrack --ctstate NEW -j filter-oUDP6
+  ${ipv6} -A OUTPUT -j REJECT
+
+}
+

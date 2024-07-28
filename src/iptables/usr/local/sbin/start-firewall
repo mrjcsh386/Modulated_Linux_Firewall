@@ -22,14 +22,17 @@ source "$inc_file"
 
 # Pulling variables and other values from key files to provide functionality.
 #source "$etc_file"  # Todo: Engineer posture and paranoiha levels
-source "$core4_ff"
-source "$core6_ff"
+source "$icore4_ff"
+source "$ocore4_ff"
+source "$icore6_ff"
+source "$ocore6_ff"
 
 # Add prestage scripts for such things as ipset assembly, or prehooks here.
 
 # Start assembling the firewall
 flush_rules4; flush_rules6
-core_rules4; core_rules6
+icore_rules4; icore_rules6
+ocore_rules4; ocore_rules6
 
 # Sourcing scripts that have been selected for deployment to secure services.
 # IPv4

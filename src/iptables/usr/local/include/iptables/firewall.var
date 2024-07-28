@@ -12,9 +12,27 @@ nat6="$ipv6 -t nat"
 sec6="$ipv6 -t security"
 
 # Some directories I consider to be key to this project specifically.
+# etc et al not in current deployment.
 etc_dir="$script_root/etc/iptables"
 etc_file="$etc_dir/firewall.cfg"
+# Depo for function files, and executables.
 lib_dir="$script_root/lib/iptables"
-core4_ff="$lib_dir/icore.ipv4"
-core6_ff="$lib_dir/icore.ipv6"
+icore4_ff="$lib_dir/icore.ipv4"
+ocore4_ff="$lib_dir/ocore.ipv4"
+icore6_ff="$lib_dir/icore.ipv6"
+ocore6_ff="$lib_dir/ocore.ipv6"
+# Should I ship to /usr/local/libexec?
 roles_dir="$lib_dir/roles.d"
+
+# I advise the use of gpasswd. This will permit per instance of the group
+# permissions, rather than having them as natural talents for the active user.
+ssh_client_gid=''
+ssh_server_ports='22,2222'
+www_client_gid=''
+www_server_ports='80,443'
+ftp_client_gid=''
+ftp_server_ports='21,20,990,989'
+irc_client_gid=''
+irc_server_ports='6667,6668,6669,7000,6697'
+# I'm including dcc for IRC, though I advise review its use and deployment.
+dcc_active_ports='49152:65535'

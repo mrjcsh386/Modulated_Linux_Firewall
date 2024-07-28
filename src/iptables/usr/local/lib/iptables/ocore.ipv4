@@ -1,0 +1,37 @@
+#! /bin/bash
+
+
+function ocore_rules4() {
+
+  ${ipv4} -P OUTPUT DROP
+
+  ${ipv4} -A OUTPUT -o lo -j ACCEPT
+  ${ipv4} -A OUTPUT -p icmp -j ACCEPT
+
+  # User-defined chains
+  ${ipv4} -N outbound-LAR4
+  ${ipv4} -A outbound-LAR4 -j LOG --log-prefix 'ipt: outbound REJECT: ' --log-level 4
+  ${ipv4} -A outbound-LAR4 -j REJECT
+
+  # filter-oTCP4
+  ${ipv4} -N filter-oTCP4
+  ${ipv4} -A filter-oTCP4 -p tcp -m multiport --dports "$www_server_ports" \
+   -m owner --gid-owner "$www_client_gid" --suppl-groups -j ACCEPT
+  ${ipv4} -A filter-oTCP4 -p tcp -m multiport --dports "$ssh_server_ports" \
+   -m owner --gid-owner "$ssh_client_gid" --suppl-groups -j ACCEPT
+  ${ipv4} -A filter-oTCP4 -p tcp -m multiport --dports "$ftp_server_ports" \
+   -m owner --gid-owner "$ftp_client_gid" --suppl-groups -j ACCEPT
+  ${ipv4} -A filter-oTCP4 -p tcp --dport 53 \
+   -m owner --gid-owner "staff" --suppl-groups -j ACCEPT
+  # filter-oUDP4
+  ${ipv4} -N filter-oUDP4
+  ${ipv4} -A filter-oUDP4 -p udp --dport 53 \
+   -m owner --gid-owner "dialout" --suppl-groups -j ACCEPT
+
+  ${ipv4} -A OUTPUT -m conntrack --ctstate ESTABLISHED -j ACCEPT
+  ${ipv4} -A OUTPUT -p tcp --syn -m conntrack --ctstate NEW -j filter-oTCP4
+  ${ipv4} -A OUTPUT -p udp -m conntrack --ctstate NEW -j filter-oUDP4
+  ${ipv4} -A OUTPUT -j REJECT
+
+}
+
