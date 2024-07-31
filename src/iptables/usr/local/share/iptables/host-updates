@@ -1,10 +1,10 @@
 #! /bin/bash --
 
 
-[ $# >= 2 ] && exit 4
+(( $# >= 2 )) && exit 4
 
 # Temporary files directory.
-temp_file="/var/tmp/$0.$( date +%Y%m%d)"
+temp_file="/tmp/$(basename $0).$( date +%Y%m%d)"
 
 # Probe and discover all host names for required repositories instilled by admin
 function extract_hosts() {
@@ -57,7 +57,7 @@ function remove_firewall_rules() {
 
   else
 
-    echo "No IP file found! No rules to remove
+    echo "No IP file found! No rules to remove"
 
   fi
 
@@ -70,7 +70,7 @@ case "$1" in
 
     hosts=( $( extract_hosts ) )
     ips=( $( resolve_ips "${hosts[@]}" ) )
-    add_firewall_rule "${ips[@]}"
+    add_firewall_rules "${ips[@]}"
 
   ;;
   --remove|-r )
