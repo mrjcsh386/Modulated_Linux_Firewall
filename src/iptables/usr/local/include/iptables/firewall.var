@@ -26,13 +26,13 @@ roles_dir="$lib_dir/roles.d"
 
 # I advise the use of gpasswd. This will permit per instance of the group
 # permissions, rather than having them as natural talents for the active user.
-ssh_client_gid=''
+ssh_client_gid='ssh-client'
 ssh_server_ports='22,2222'
-www_client_gid=''
+www_client_gid='www-client'
 www_server_ports='80,443'
-ftp_client_gid=''
+ftp_client_gid='ftp-client'
 ftp_server_ports='21,20,990,989'
-irc_client_gid=''
+irc_client_gid='irc-client'
 irc_server_ports='6667,6668,6669,7000,6697'
 # I'm including dcc for IRC, though I advise review its use and deployment.
 dcc_active_ports='49152:65535'

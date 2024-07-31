@@ -1,0 +1,83 @@
+#! /bin/bash --
+
+
+[ $# >= 2 ] && exit 4
+
+# Temporary files directory.
+temp_file="/var/tmp/$0.$( date +%Y%m%d)"
+
+# Probe and discover all host names for required repositories instilled by admin
+function extract_hosts() {
+
+  grep -Eo 'https?://[^ ]+' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null | \
+  sed -E 's|https?://([^/]+)/.*|\1|' | sort -u | awk -F: '{ print $2 }'
+
+}
+
+# For list of hostnames, convert to IPs, and sort them as unique.
+function resolve_ips() {
+
+  local hosts=("$@")
+  for host in "${hosts[@]}"; do
+
+    getent ahosts "$host" | awk '{ print $1 }' | sort -u
+
+  done
+
+}
+
+# Take arguments and append them to filter-oTCP4 to explicitely permit updates.
+function add_firewall_rules() {
+
+  local ips=( "$@" )
+  [ -f "$temp_file" ] && rm "$temp_file"
+
+  for ip in "${ips[@]}"; do
+
+    echo "Adding rule for $ip"
+    iptables -A filter-oTCP4 -p tcp --dport 443 -d "$ip" -j ACCEPT
+    echo "$ip" >> "$temp_file"
+
+  done
+
+}
+
+function remove_firewall_rules() {
+
+  if [[ -f "$temp_file" ]]; then
+
+    local ips=( $( cat "$temp_file" ) )
+    for ip in "${ips[@]}"; do
+
+      echo "Removing rule for $ip"
+      iptables -D filter-oTCP4 -p tcp --dport 443 -d "$ip" -j ACCEPT
+
+    done
+    rm -f "$temp_file"
+
+  else
+
+    echo "No IP file found! No rules to remove
+
+  fi
+
+}
+
+# The script proper starts here!
+case "$1" in
+
+  --add|-a )
+
+    hosts=( $( extract_hosts ) )
+    ips=( $( resolve_ips "${hosts[@]}" ) )
+    add_firewall_rule "${ips[@]}"
+
+  ;;
+  --remove|-r )
+
+    remove_firewall_rules
+
+  ;;
+  *) usage ;;
+
+esac
