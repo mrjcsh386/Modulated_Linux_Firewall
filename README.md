@@ -1,6 +1,5 @@
 # Modulated_Linux_Firewall
 
-<<<<<<< HEAD
 ### Note:
 As of current, this is me developing the 'paranoid' posture, as this is the continuation of my pet project for firewalling. So, stay tuned for different postures such as low, medium, high, and paranoid.
 
