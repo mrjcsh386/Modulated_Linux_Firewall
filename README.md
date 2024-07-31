@@ -1,5 +1,6 @@
 # Modulated_Linux_Firewall
 
+<<<<<<< HEAD
 ### Note:
 As of current, this is me developing the 'paranoid' posture, as this is the continuation of my pet project for firewalling. So, stay tuned for different postures such as low, medium, high, and paranoid.
 
@@ -16,3 +17,5 @@ After you have configured your target group, as www-data is just an example, use
 
 #### Performing system updates:
 As much as it would be great to maintain an IPSet named garden-apt hosting all accessable IPs associated to a particular FQDN hostname, and granting control back to the round-robin, I've opted to make inqueries for resolving of hostnames during the time of issuing the commands to update the host to be done at the time. So, for now you'll have to call /usr/local/share/iptables/host-updates by hand, or as a component of a wrapper to permit access for apt repositories. If there is any one using any other operating system that handles this process where one can modify that script to permit updates on a PID, or [U|G]ID basis, I'd love to hear from you!
+=======
+>>>>>>> fb502ac (On branch main)
