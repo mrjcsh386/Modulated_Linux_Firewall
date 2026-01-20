@@ -1,0 +1,13 @@
+#! /usr/sbin/nft -f
+
+# /usr/local/etc/nftables.rules.d/00-ingress.rules
+# Purpose: To direct defined interfaces through additional filtering.
+
+
+table netdev filter {
+  chain ingress_eth0 {
+    type filter hook ingress device $eth0 priority -500 ;
+    jump ingress_filter
+  }
+
+}

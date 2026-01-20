@@ -1,0 +1,131 @@
+#! /usr/sbin/nft -f
+
+# /usr/local/etc/nftables.rules
+# Author: mrjcsh386@gmail.com
+# Revised, 16 January, 2026
+# Tested with:  nft v1.0.6 (Lester Gooch #5)
+#               Dnsmasq version 2.90 Copyright (c) 2000-2014 Simon Kelley
+#               apt-cacher-ng 3.7.4-1+b2
+
+# Purpose: To be either called by hand, or by systemd and permits dynamicly
+#   loading modules per protocal by providing a unified framework for rules
+#   to snap in place.
+
+# Notes: This firewall design requires dnsmasq, as well as apt-cacher-ng for
+#   system updates, as well as provisioning of 'garden' sets
+#
+#   You will need to have a few user groups:
+#   - www-client: For users you wish to permit access to the outer gates.
+#     Protocols supported by this group can be associated to ports https,
+#     http, ftp et al.
+
+
+flush ruleset
+
+table netdev filter {
+  # Basic filter chain, devices can be configured to jump here.
+  chain ingress_filter {
+    # Drop all fragments.
+    ip frag-off & 0x1fff != 0 drop
+
+    # Drop XMAS packets.
+    tcp flags & (fin|syn|rst|psh|ack|urg) == fin|syn|rst|psh|ack|urg drop
+
+    # Drop NULL packets.
+    tcp flags & (fin|syn|rst|psh|ack|urg) == 0x0 drop
+
+    # Drop uncommon MSS values.
+    tcp flags syn tcp option maxseg size 1-535 drop
+  }
+
+}
+
+table inet filter {
+  set scanners4 {
+    type ipv4_addr
+    flags dynamic, timeout
+    timeout 1h
+  }
+
+  set scanners6 {
+    type ipv6_addr
+    flags dynamic, timeout
+    timeout 1h
+  }
+
+  chain input {
+    type filter hook input priority 200 ; policy drop ;
+    jump base_filter
+    jump input_hook
+    add @scanners4 { ip saddr }
+    add @scanners6 { ip6 saddr }
+    log prefix "Dropped: potential scan in progress: " drop
+  }
+
+  chain input_hook {
+    tcp flags syn ct state new jump input_tcp
+    meta l4proto udp ct state new jump input_udp
+  }
+  chain input_tcp {
+  }
+  chain input_udp {
+  }
+
+  chain base_filter {
+    jump drop_filter
+    ct state vmap {
+      established: accept,
+      related: accept,
+      new: continue,
+      invalid: drop
+    }
+    # Allow loopback traffic
+    iif lo accept
+    oif lo accept
+  }
+
+  chain drop_filter {
+    ip saddr @scanners4 drop
+    ip daddr @scanners4 drop
+    ip6 saddr @scanners6 drop
+    ip6 daddr @scanners6 drop
+}
+
+  chain forward {
+    type filter hook forward priority 200 ; policy drop ;
+    jump base_filter
+    jump forward_hook
+    log prefix "Dropped: forwarded traffic: " drop
+  }
+
+  chain forward_hook {
+  }
+
+  chain output {
+    type filter hook output priority 200 ; policy drop ;
+    jump base_filter
+    jump output_hook
+    log prefix "Dropped: output traffic: "
+  }
+
+  chain output_hook {
+    meta l4proto tcp ct state new jump output_tcp
+    meta l4proto udp ct state new jump output_udp
+  }
+  chain output_tcp {
+  }
+  chain output_udp {
+  }
+}
+
+table inet nat {
+  chain prerouting {
+    type nat hook prerouting priority 0 ;
+  }
+  chain postrouting {
+    type nat hook postrouting priority 500 ;
+  }
+
+}
+
+include "/usr/local/etc/nftables.rules.d/*.rules"

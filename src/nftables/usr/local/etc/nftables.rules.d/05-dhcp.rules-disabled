@@ -1,0 +1,44 @@
+#! /usr/sbin/nft -f
+
+# /usr/local/etc/nftables.rules.d/05-dhcp.rules
+
+
+define dhcp_server_interfaces = { $man0 }  # #$dmz_interface }
+define dhcp_client_interfaces = { $man0, $wan0 }
+
+table inet filter {
+  set dhcp_server {
+    type inet_service
+    elements = { 67 }
+  }
+
+  set dhcp_client {
+    type inet_service
+    elements = { 68 }
+  }
+
+  set dhcp6_server {
+    type iinet_service
+    elements = { 547 }
+  }
+
+  set dhcp6_client {
+    type inet_service
+    elements = { 546 }
+  }
+
+  chain input_hook {
+    iif $dhcp_client_interfaces udp sport @dhcp_server udp dport @dhcp_client accept
+    iif $dhcp_client_interfaces udp sport @dhcp6_server udp dport @dhcp_client accept
+    iif $dhcp_server_interfaces udp dport @dhcp_server udp sport $dhcp_client accept
+    iif $dhcp_server_interfaces udp dport @dhcp6_server udp sport @dhcp6_client accept
+  }
+
+  chain output_hook
+    oif $dhcp_client_interfaces udp dport @dhcp_server sport @dhcp_client accept
+    oif $dhcp_client_interfaces udp dport @dhcp6_server udp sport $dhcp6_client accept
+    oif $dhcp_server_interfaces udp sport @dhcp_server udp dport @dhcp_client accept
+    oif $dhcp_server_interfaces udp sport @dhcp6_server udp dport @dhcp6_client accept
+  }
+
+}

@@ -1,0 +1,26 @@
+#! /usr/sbin/nft -f
+
+# /usr/local/etc/nftables.rules.d/01-icmp.rules
+
+
+define allowed_icmpv4_types = { echo-reply, echo-request }
+define trusted_icmp_types = { destination-unreachable, time-exceeded }
+define allowed_icmpv6_types = { nd-router-solicit, nd-router-advert, nd-neighbor-solicit, nd-neighbor-advert, echo-request, echo-reply }
+
+table inet filter {
+  chain base_filter {
+    ip protocol icmp jump icmpv4_filter
+    ip6 nexthdr icmpv6 jump icmpv6_filter
+  }
+
+  chain icmpv4_filter {
+    icmp type $allowed_icmpv4_types accept
+    ip saddr @trusted_nets icmp type $trusted_icmp_types accept
+    ip daddr @trusted_nets icmp type $trusted_icmp_types accept
+  }
+
+  chain icmpv6_filter {
+    icmpv6 type $allowed_icmpv6_types accept
+  }
+
+}

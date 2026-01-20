@@ -1,0 +1,44 @@
+#! /usr/sbin/nft -f
+
+# /usr/local/etc/nftables.rules.d/10-docker.rules
+
+
+define docker_default_net = 172.17.0.0/16
+define docker_server_net = 10.100.10.0/24
+define docker_nets = { $docker_default_net, $docker_server_net }
+
+table inet filter {
+  set docker_nets {
+    flags interval
+    elements = { $docker_nets }
+  }
+
+  set dns_ports {
+    type inet_service
+    elements = { 53 }
+  }
+
+  set web_ports {
+    type inet_service
+    elements = { 443 }
+  }
+
+  chain docker_filter {
+    udp dport @dns_ports accept
+    oif $wan0 tcp dport @web_ports accept
+  }
+
+  chain forward_hook {
+    ip saddr @docker_nets jump docker_filter
+  }
+
+}
+
+table inet nat {
+  set nat_nets {
+    type ipv4_addr
+    flags interval
+    elements = { $docker_nets }
+  }
+
+}

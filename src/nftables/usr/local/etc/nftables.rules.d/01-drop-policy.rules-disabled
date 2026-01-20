@@ -1,0 +1,27 @@
+#! /usr/sbin/nft -f
+
+# /usr/local/etc/nftables.rules.d/01-drop-policy.rules
+
+
+#if $dmz0 != "" && $dmz0_network != "" {
+#  define dmz_spam_udp = { 1234 }
+#  define dmz_spam_tcp = { 2350 }
+
+#  table inet filter {
+#    set spam_udp {
+#      type inet_service
+#      elements = { $dmz_spam_udp }
+#    }
+#    set spam_tcp {
+#      type inet_service
+#      elements = { $dmz_spam_tcp }
+#    }
+#    chain drop_filter {
+#      tcp dport @spam_tcp drop
+#      udp dport $spam_udp drop
+#    }
+#  }
+  # TODO: Add fullbogonsv[4|6] sets
+  # TODO: Add scanners sets
+  # TODO: Add pooled bad guys sets
+#}

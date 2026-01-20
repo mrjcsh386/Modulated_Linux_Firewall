@@ -1,0 +1,33 @@
+#! /usr/sbin/nft -f
+
+# /usr/local/etc/nftables.rules.d/443-https.rules
+
+
+define https_data_group = { www-client }
+#define proxy_https_servers = { }
+table inet filter {
+  set external_https_servers {
+    type ipv4_addr
+  }
+
+  set repo_ips {
+    type ipv4_addr
+  }
+
+  set external_https_clients {
+    type ipv4_addr
+    flags interval
+    elements = { $eth0_network }
+
+  set https_ports {
+    type inet_service
+    elements = { 443 }
+  }
+
+  chain https_filter {
+    ip daddr @repo_ips skuid apt-cacher-ng accept
+  }
+
+  chain output_tcp {
+    tcp dport @https_ports jump https_filter
+  }

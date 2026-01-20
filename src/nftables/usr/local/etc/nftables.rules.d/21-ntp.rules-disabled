@@ -1,0 +1,27 @@
+#! /usr/sbin/nft -f
+
+# /usr/local/etc/nftables.rules.d/21-ntp.rules
+
+
+table inet filter {
+  set ntp_ports {
+    type inet_service
+    elements = { 123 }
+  }
+
+  set ntp4_ports {
+    type inet_service
+    elements = { 4460 }
+  }
+
+  chain base_filter {
+    tcp dport @ntp4_ports jump ntp_filter
+    udp dport @ntp_ports jump ntp_filter
+  }
+
+  chain ntp_filter {
+    ip saddr @trusted_nets accept
+    #skuid 123 accept
+  }
+
+}

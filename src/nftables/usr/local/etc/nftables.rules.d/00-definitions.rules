@@ -1,0 +1,40 @@
+#! /usr/sbin/nft -f
+
+# /usr/local/etc/nftables.rules.d/00-definitions.rules
+# Purpose: For the user to define intent driven variables to reduce snow-flake
+#   configuration of the firewall.
+
+
+# Define LAN
+define eth0 = eth0
+# Define public domain facing interface
+#- If only one interface, can be:
+#define wan0 = $eth0
+#+ If multiple, define as the interface available to your ISP device.
+define wan0 = $eth0
+# man0 is for management network with privilege access to the host.
+define man0 = lo
+# Activate this If you're the firewall
+#define dmz0 = xbr0
+
+define eth0_network = 100.115.92.192/28
+define wan0_network = $eth0_network
+define man0_network = 127.1.0.0/16
+#define dmz0_network =
+
+table inet filter {
+  set trusted_nets {
+    type ipv4_addr
+    flags interval
+    elements = { $eth0_network, $man0_network }
+  }
+
+#  if $dmz0 != "" {
+#    set dmz_nets {
+#      type ipv4_addr
+#      flags interval
+#      elements = { $dmz0_network }
+#    }
+#  }
+
+}

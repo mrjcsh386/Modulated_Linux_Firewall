@@ -1,0 +1,41 @@
+#! /usr/sbin/nft -f
+#
+# /usr/local/etc/nftables.rules.d/22-ssh.rules
+
+
+define github_ssh_servers = { 140.82.112.3, 140.82.112.4, 140.82.114.3, 140.82.113.4, 140.82.114.4, 140.82.113.3 }
+
+table inet filter {
+  set external_ssh_servers {
+    type ipv4_addr
+    elements = { $github_ssh_servers }
+  }
+
+  set external_ssh_clients { 
+    type ipv4_addr
+    flags interval
+    elements = { $eth0_network }
+  }
+
+  set ssh_clients {
+    type ipv4_addr
+    flags interval
+    elements = { $man0_network }
+  }
+
+  set ssh_ports {
+    type inet_service
+    elements = { 22 }
+  }
+
+  chain ssh_filter {
+    ip saddr @external_ssh_clients ip daddr @external_ssh_servers accept
+    ip saddr @ssh_clients accept
+    #skuid 1000 ip daddr @external_ssh_servers accept
+  }
+
+  chain input_tcp {
+    tcp dport @ssh_ports jump ssh_filter
+  }
+
+}

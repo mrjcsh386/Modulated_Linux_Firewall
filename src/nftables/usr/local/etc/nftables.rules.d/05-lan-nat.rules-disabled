@@ -1,0 +1,17 @@
+#! /usr/sbin/nft -f
+#
+# /usr/local/etc/nftables.rules.d/05-lan-nat.rules
+
+
+table inet nat {
+  set nat_nets {
+    type ipv4_addr
+    flags interval
+    elements = { $eth0_network }
+  }
+
+  chain postrouting {
+    oif $wan0 ip saddr @nat_nets masquerade
+  }
+
+}
