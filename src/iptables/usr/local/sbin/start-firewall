@@ -39,3 +39,5 @@ ocore_rules4; ocore_rules6
 source "$roles_dir"/*.ipv4
 # IPv6
 source "$roles_dir"/*.ipv6
+
+## Method abandoned. Sorry, folks. I've been on a wild trip through life!
